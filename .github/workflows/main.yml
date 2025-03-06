@@ -3,7 +3,7 @@ name: Deploy Specific Folder to Vercel
 on:
   push:
     paths:
-      - "techbite/**"  # Only trigger when files in 'project-one' change
+      - "techbite/**"  # Only trigger when files in 'techbite' change
     branches:
       - main
 
@@ -12,4 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Vercel Deployment for Project One
-        run: curl -X POST "https://api.vercel.com/v1/integrations/deploy/prj_HQKk6DV2nnPRQM7wVXZPJpvO2LcL/cRJG0lW7gN"
+        run: curl -X POST "$VERCEL_HOOK"
+        env:
+          VERCEL_HOOK: ${{ secrets.VERCEL_HOOK }}
