@@ -14,8 +14,12 @@ export default function StudioHome() {
   }, [isAuthenticated, user]);
 
   const handleLogout = async () => {
-    await logout();
-    router.push('/login');
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
 
   return (

@@ -1,11 +1,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
-import { useAuth } from '../contexts/AuthContext';
-import { TextField, Button, Paper, Typography, Box, Container } from '@mui/material';
-import { Alert } from '@mui/material';
+import { TextField, Button, Paper, Typography, Box, Container, Alert } from '@mui/material';
 
 export default function Login() {
-  const auth = useAuth(); // Get the entire auth object
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -13,8 +10,6 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return;
-
     setError('');
     setLoading(true);
 
@@ -28,48 +23,42 @@ export default function Login() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
+        setError(
+          'Invalid credentials. Please use valid credentials' 
+        );
+        setLoading(false);
+        return;
       }
 
-      // Use auth.login instead of destructured login
-      await auth.login(data.token, data.user);
-
-      // Handle redirect
-      const redirects = {
-        'studio': '/studio/upload',
-        'guest': '/guest/selfie',
-        'admin': '/admin/dashboard'
-      };
-
-      const path = redirects[data.user.role as keyof typeof redirects];
-      if (path) {
-        window.location.assign(path);
+      // Handle redirect directly
+      if (data.user.role === 'studio') {
+        window.location.href = '/studio/upload';
+      } else if (data.user.role === 'guest') {
+        window.location.href = '/guest/selfie';
+      } else if (data.user.role === 'admin') {
+        window.location.href = '/admin/dashboard';
       }
 
     } catch (err: any) {
       console.error('Login error:', err);
-      setError(err.message || 'Failed to login');
-    } finally {
+      setError('An unexpected error occurred. Please try again.');
       setLoading(false);
     }
   };
+
   return (
     <Container component="main" maxWidth="xs">
       <Box sx={{ marginTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <Paper elevation={3} sx={{ p: 4, width: '100%' }}>
           <Typography component="h1" variant="h5" align="center" gutterBottom>
-            PhotoWala
+            PicPanda
           </Typography>
           
-          <Typography variant="body2" color="textSecondary" align="center" sx={{ mb: 2 }}>
-            Use: studio@example.com / password123
-            <br />
-            or: guest@example.com / password123
-            <br />
-            or: admin@example.com / password123
-          </Typography>
-
-          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          {error && (
+            <Alert severity="error" sx={{ mb: 2, whiteSpace: 'pre-line' }}>
+              {error}
+            </Alert>
+          )}
 
           <Box component="form" onSubmit={handleSubmit} noValidate>
             <TextField

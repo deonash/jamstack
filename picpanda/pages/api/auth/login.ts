@@ -17,13 +17,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     };
 
     const user = USERS[email as keyof typeof USERS];
+    
+    // Debug log
+    console.log('Login attempt:', { email, providedPassword: password, foundUser: user });
+
     if (!user || user.password !== password) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     const token = sign({ email, role: user.role }, 'your-secret-key');
 
-    // Set cookies with correct names to match middleware
+    // Set cookies
     res.setHeader('Set-Cookie', [
       `auth_token=${token}; Path=/; HttpOnly; Secure; SameSite=Strict`,
       `user_role=${user.role}; Path=/; HttpOnly; Secure; SameSite=Strict`
