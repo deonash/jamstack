@@ -2,60 +2,50 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  // Skip middleware for data requests and static files
-  if (
-    request.nextUrl.pathname.startsWith('/_next') ||
-    request.nextUrl.pathname.includes('.json')
-  ) {
-    return NextResponse.next();
-  }
-
-  const isLoggedIn = request.cookies.get('auth_token');
   const path = request.nextUrl.pathname;
+  const token = request.cookies.get('auth_token');
+  const userRole = request.cookies.get('user_role');
 
-  // Allow access to login page when not logged in
-  if (path === '/login' && !isLoggedIn) {
+  // Public paths that don't require authentication
+  if (path === '/login') {
+    if (token) {
+      // If already logged in, redirect to appropriate dashboard
+      return NextResponse.redirect(new URL(
+        userRole?.value === 'studio' ? '/studio/upload' : 
+        userRole?.value === 'admin' ? '/admin/dashboard' : 
+        '/guest/selfie',
+        request.url
+      ));
+    }
     return NextResponse.next();
   }
 
-  // Redirect to appropriate page if already logged in
-  if (path === '/login' && isLoggedIn) {
-    const userRole = request.cookies.get('user_role')?.value;
-    const redirectPath = userRole === 'studio' ? '/studio/upload' : '/guest/selfie';
-    return NextResponse.redirect(new URL(redirectPath, request.url));
-  }
-
-  // Protect other routes
-  if (!isLoggedIn && path !== '/login') {
+  // Protected paths - check for authentication
+  if (!token) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // Role-based access control
-  if (isLoggedIn && request.cookies.get('user_role')) {
-    // Prevent studio users from accessing guest routes
-    if (request.cookies.get('user_role')?.value === 'studio' && path.startsWith('/guest')) {
-      return NextResponse.redirect(new URL('/studio/upload', request.url));
-    }
+  // Role-based protection
+  if (path.startsWith('/studio') && userRole?.value !== 'studio') {
+    return NextResponse.redirect(new URL('/guest/selfie', request.url));
+  }
 
-    // Prevent guest users from accessing studio routes
-    if (request.cookies.get('user_role')?.value === 'guest' && path.startsWith('/studio')) {
-      return NextResponse.redirect(new URL('/guest/selfie', request.url));
-    }
+  if (path.startsWith('/guest') && userRole?.value !== 'guest') {
+    return NextResponse.redirect(new URL('/studio/upload', request.url));
+  }
+
+  if (path.startsWith('/admin') && userRole?.value !== 'admin') {
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   return NextResponse.next();
 }
 
-// Configure which routes to run middleware on
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
-  ],
-}; 
+    '/studio/:path*',
+    '/guest/:path*',
+    '/admin/:path*',
+    '/login'
+  ]
+};

@@ -3,9 +3,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'next/router';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import { Container, Typography, Button } from '@mui/material';
 
 export default function GuestSelfie() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -42,9 +43,37 @@ export default function GuestSelfie() {
     // Handle the image data (e.g., upload to server)
   };
 
+  const handleLogout = async () => {
+    await logout();
+    router.push('/login');
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
+      <div className="bg-gradient-to-r from-purple-600 to-blue-500">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex justify-between items-center">
+            <span className="text-3xl font-bold text-white">📸 PhotoWala Guest</span>
+            <div className="flex items-center space-x-4">
+              <span className="text-white">{user?.email}</span>
+              <Button 
+                variant="contained"
+                sx={{ 
+                  bgcolor: 'white', 
+                  color: 'purple',
+                  '&:hover': {
+                    bgcolor: 'rgba(255, 255, 255, 0.9)'
+                  }
+                }}
+                onClick={handleLogout}
+              >
+                Logout
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
       
       <main className="flex-grow container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-8">Take Your Selfie</h1>
@@ -83,5 +112,13 @@ export default function GuestSelfie() {
 
       <Footer />
     </div>
+  );
+}
+
+export function GuestHome() {
+  return (
+    <Container>
+      <Typography variant="h4">Welcome to the Guest Selfie Page</Typography>
+    </Container>
   );
 } 

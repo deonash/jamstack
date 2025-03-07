@@ -1,73 +1,77 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/router';
+import { createContext, useContext, useState, useEffect } from 'react';
 
 interface User {
-  role: 'studio' | 'guest';
+  id: string;
   email: string;
+  role: string;
+  name: string;
 }
 
 interface AuthContextType {
-  isAuthenticated: boolean;
   user: User | null;
+  isAuthenticated: boolean;
   login: (token: string, userData: User) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType>({
-  isAuthenticated: false,
-  user: null,
-  login: async () => {},
-  logout: () => {},
-});
+// Create context with proper typing
+const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Use useCallback to memoize the login function
-  const login = useCallback(async (token: string, userData: User) => {
-    localStorage.setItem('auth_token', token);
-    localStorage.setItem('user_data', JSON.stringify(userData));
-    
-    // Set cookie for middleware
-    document.cookie = `auth_token=${token}; path=/`;
-    document.cookie = `user_role=${userData.role}; path=/`;
-    
-    setIsAuthenticated(true);
-    setUser(userData);
-  }, []);
-
-  const logout = useCallback(() => {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user_data');
-    
-    // Remove cookies
-    document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
-    document.cookie = 'user_role=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
-    
-    setIsAuthenticated(false);
-    setUser(null);
-    router.push('/login');
-  }, [router]);
-
-  // Only check auth status once on mount
-  useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    const savedUser = localStorage.getItem('user_data');
-    
-    if (token && savedUser) {
-      const userData = JSON.parse(savedUser);
-      setIsAuthenticated(true);
+  const login = async (token: string, userData: User) => {
+    try {
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
+      setIsAuthenticated(true);
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
+  };
+
+  const logout = async () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    setIsAuthenticated(false);
+  };
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+    if (token && userData) {
+      try {
+        setUser(JSON.parse(userData));
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+      }
     }
   }, []);
 
+  const value = {
+    user,
+    isAuthenticated,
+    login,
+    logout
+  };
+
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-export const useAuth = () => useContext(AuthContext); 
+// Custom hook with error handling
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+} 

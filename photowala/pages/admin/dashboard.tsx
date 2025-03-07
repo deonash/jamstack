@@ -1,14 +1,14 @@
+import { useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'next/router';
 import { Container, Typography, Button, Box } from '@mui/material';
-import { useEffect } from 'react';
 
-export default function StudioHome() {
+export default function AdminDashboard() {
   const { user, isAuthenticated, logout } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'studio') {
+    if (!isAuthenticated || user?.role !== 'admin') {
       router.replace('/login');
     }
   }, [isAuthenticated, user]);
@@ -27,7 +27,7 @@ export default function StudioHome() {
         <Container>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography variant="h4" sx={{ color: 'white' }}>
-              📸 PhotoWala Studio
+              📸 PhotoWala Admin
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Typography sx={{ color: 'white' }}>{user?.email}</Typography>
@@ -50,7 +50,7 @@ export default function StudioHome() {
       </Box>
 
       <Container sx={{ py: 4, flexGrow: 1 }}>
-        <Typography variant="h4" sx={{ mb: 4 }}>Studio Dashboard</Typography>
+        <Typography variant="h4" sx={{ mb: 4 }}>Admin Dashboard</Typography>
       </Container>
     </Box>
   );
